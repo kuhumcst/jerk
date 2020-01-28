@@ -319,8 +319,8 @@ line* readInput(char* name)
             Lines[L].P[0].y = yl;
             Lines[L].P[0].p = pl;
             Lines[L].P[1].x = xr;
-            Lines[L].P[1].y = xr;
-            Lines[L].P[1].p = xr;
+            Lines[L].P[1].y = yr;
+            Lines[L].P[1].p = pr;
             }
         Lines[L].frame = 0;
         Lines[L].P[0].x = 0.0;

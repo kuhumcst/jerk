@@ -1,0 +1,3 @@
+2020.01.28
+
+Fixed bug in capture of y and p values for the second person.

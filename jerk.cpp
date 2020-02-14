@@ -377,7 +377,8 @@ void printPersonHead(FILE* fp, char* name)
     );
     }
 
-static char names[2][3];
+//static char names[2][3];
+static char * names[2];
 
 void print(struct line* Lines, const char* out)
     {
@@ -414,12 +415,16 @@ int main(int argc, char** argv)
         printf("jerk <input> <output> <leftperson> <rightperson> <velocity period> <acceleration period> <jerk period> <margin type>\n");
         return -1;
         }
+    /*
     names[0][0] = argv[1][0];
     names[0][1] = argv[1][1];
     names[0][2] = 0;
     names[1][0] = argv[1][3];
     names[1][1] = argv[1][4];
     names[1][2] = 0;
+    */
+    names[0] = argv[3];
+    names[1] = argv[4];
     struct line* Lines = readInput(argv[1]);
     if(Lines)
         {

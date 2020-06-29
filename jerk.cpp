@@ -11,7 +11,7 @@ FrameNr <tab> <person A data> <tab> <person B data> <newline>
 
 where data for each person is
 
-<x-position> <tab> <y-position> <tab> <probability> 
+<x-position> <tab> <y-position> <tab> <probability>
 
 The probability value is currently ignored.
 
@@ -23,19 +23,19 @@ The command line arguments to the program are
   number of observations used for computing velocity
   number of observations used for computing acceleration
   number of observations used for computing jerk
-  location of the observations with respect to the created annotation: 
+  location of the observations with respect to the created annotation:
        'past' or 'middle'
-  
+
 For example
 
   jerk F2_M4_SPLIT_FINAL.tab F2_M4_SPLIT_FINAL-7-14-21-past.vaj.tab F2 M4 7 14 21 past
 
-  
+
 Output format is
 <frame number x 4> <tab> <person A data> <tab> <person B data> <new line>
   ...
 
-<person data> = 
+<person data> =
 <x> <tab> <y> <tab> <probability> <tab> <velocity> <tab> <acceleration> <tab> <jerk> <new line>
 
 where
@@ -77,69 +77,75 @@ struct person
     double jy;
     };
 
+int persons;
+
 struct line
     {
     int frame;
-    struct person P[2];
+    struct person* P;
+    line() :frame(-1), P(0)
+        {
+        P = new person[persons];
+        }
     };
 
 double velocity(double St, double St2, double Sh, double Sth, double period)
     {
-/*
-first degree: a:position, b:velocity
-var a
-solution (a.period^-1*(Sh+-1*St*b))
-var b
-  solution
-  (b.(-1*St^2+St2*period)^-1*(-1*Sh*St+Sth*period))
+    /*
+    first degree: a:position, b:velocity
+    var a
+    solution (a.period^-1*(Sh+-1*St*b))
+    var b
+      solution
+      (b.(-1*St^2+St2*period)^-1*(-1*Sh*St+Sth*period))
 
-For vertical, replace h th by v tv
-*/
+    For vertical, replace h th by v tv
+    */
     return (Sth * period - Sh * St) / (St2 * period - St * St);
     }
 
 double acceleration(double St, double St2, double St3, double St4, double Sh, double Sth, double St2h, double period)
     {
 
-/*
+    /*
 
-acceleration c
+    acceleration c
 
-(horizontal)
+    (horizontal)
 
-accumulate (S) t t2 t3 t4 h th t2h
-(vertical                 v tv t2v )
+    accumulate (S) t t2 t3 t4 h th t2h
+    (vertical                 v tv t2v )
 
-solution
-( c
-.     ( -1*St2^3
-    + 2*St*St2*St3
-    + St2*St4*period
-    + -1*St^2*St4
-    + -1*St3^2*period
+    solution
+    ( c
+    .     ( -1*St2^3
+        + 2*St*St2*St3
+        + St2*St4*period
+        + -1*St^2*St4
+        + -1*St3^2*period
+        )
+      ^ -1
+    * ( -1*Sh*St2^2
+      + Sh*St*St3
+      + St*St2*Sth
+      + St2*St2h*period
+      + -1*St3*Sth*period
+      + -1*St^2*St2h
+      )
     )
-  ^ -1
-* ( -1*Sh*St2^2
-  + Sh*St*St3
-  + St*St2*Sth
-  + St2*St2h*period
-  + -1*St3*Sth*period
-  + -1*St^2*St2h
-  )
-)
 
-For vertical, replace h th t2h by v tv t2v
-*/
+    For vertical, replace h th t2h by v tv t2v
+    */
     return
         (Sh * (St * St3 - St2 * St2)
-         + Sth * (St * St2 - St3 * period)
-         + St2h * (St2 * period - St * St)
-         )
+            + Sth * (St * St2 - St3 * period)
+            + St2h * (St2 * period - St * St)
+            )
         /
         (St2 * (2 * St * St3 - St2 * St2 + St4 * period)
-         - St * St * St4
-         - St3 * St3 * period
-         );
+            - St * St * St4
+            - St3 * St3 * period
+            );
 
     }
 
@@ -157,7 +163,7 @@ double jerk(double St2, double St2h, double St3, double St3h, double St4, double
 
 void doPerson(int Person, int what, const char* Period, const char* margin, line* Lines)
     {
-    size_t seqsiz = strtoul(Period, 0, 10); 
+    size_t seqsiz = strtoul(Period, 0, 10);
     double period = (double)seqsiz;
     long t0;
     long* Ts = (long*)calloc(seqsiz, sizeof(long));
@@ -168,19 +174,19 @@ void doPerson(int Person, int what, const char* Period, const char* margin, line
     struct line* current = Lines;
 
     long Offset;
-    if(!strcmp(margin, "middle"))
-        Offset = (seqsiz -1) >> 1;
+    if (!strcmp(margin, "middle"))
+        Offset = (seqsiz - 1) >> 1;
     else
         Offset = 0;
-    for(current = Lines; current->frame != 0; ++current)
+    for (current = Lines; current->frame != 0; ++current)
         {
         struct person* pers = current->P + Person;
         struct line* assignTo = current - Offset;
         struct person* assignToPers = assignTo->P + Person;
-        if(assignTo < Lines)
+        if (assignTo < Lines)
             assignTo = 0;
         else
-            switch(what)
+            switch (what)
                 {
                 case evelo:
                     assignToPers->vx = 0;
@@ -196,11 +202,11 @@ void doPerson(int Person, int what, const char* Period, const char* margin, line
                     break;
                 }
 
-        if(pers->x != 0)
+        if (pers->x != 0)
             {
             int ind = index % seqsiz;
 
-            if(index == 0)
+            if (index == 0)
                 // Start accumulation of datapoints
                 {
                 t0 = current->frame;
@@ -213,7 +219,7 @@ void doPerson(int Person, int what, const char* Period, const char* margin, line
             hs[ind] = pers->x;
             vs[ind] = pers->y;
             ++index;
-            if(index >= seqsiz)
+            if (index >= seqsiz)
                 {
                 size_t i;
                 double averageTime = 0;
@@ -223,24 +229,24 @@ void doPerson(int Person, int what, const char* Period, const char* margin, line
                     Sv = 0.0, Stv = 0.0, St2v = 0.0, St3v = 0.0;
                 double averageh = 0;
                 double averagev = 0;
-                long Tbias = 0; 
-                for(i = 0; i < seqsiz; ++i)
+                long Tbias = 0;
+                for (i = 0; i < seqsiz; ++i)
                     {
                     Tbias += Ts[i];
                     }
                 Tbias /= seqsiz;
-                for(i = index - seqsiz; i < index; ++i)
+                for (i = index - seqsiz; i < index; ++i)
                     {
                     int id = i % seqsiz;
                     averageh += hs[id];
                     averagev += vs[id];
-                    ts[id] = (double)(Ts[id]-Tbias); // This makes ts[id] a small number around 0
+                    ts[id] = (double)(Ts[id] - Tbias); // This makes ts[id] a small number around 0
                     averageTime += ts[id]; // later used to slightly adjust the ts[id] so that their sum becomes zero.
                     }
                 averageh = averageh / period;
                 averagev = averagev / period;
                 averageTime = averageTime / period;
-                for(i = index - seqsiz; i < index; ++i)
+                for (i = index - seqsiz; i < index; ++i)
                     {
                     int id = i % seqsiz;
                     double t = ts[id] - averageTime;
@@ -263,7 +269,7 @@ void doPerson(int Person, int what, const char* Period, const char* margin, line
                     St2v += t2 * v;
                     St3v += t3 * v;
                     }
-                switch(what)
+                switch (what)
                     {
                     case evelo:
                         assignToPers->vx = velocity(St, St2, Sh, Sth, period);
@@ -292,43 +298,91 @@ line* readInput(char* name)
     FILE* fp;
     printf("name %s\n", name);
     fp = fopen(name, "r");
-    if(fp)
+    if (fp)
         {
         int lines = 1;
         int kar;
-        while((kar = fgetc(fp)) != EOF)
+        int columns = 0;
+        int mincols = 99999999;
+        int maxcols = 0;
+        int cols = 0;
+        int maxlen = 0;
+        int len = 0;
+        while ((kar = fgetc(fp)) != EOF)
             {
-            if(kar == '\n')
+            ++len;
+            if (kar == '\n')
+                {
                 ++lines;
+                if (cols > maxcols)
+                    maxcols = cols;
+                if (cols < mincols)
+                    mincols = cols;
+                if (len > maxlen)
+                    maxlen = len;
+                len = 0;
+                cols = 0;
+                }
+            else if (kar == '\t')
+                {
+                ++cols;
+                }
+            }
+        if (mincols == maxcols)
+            {
+            columns = maxcols;
+            if (columns != 3 * persons)
+                {
+                printf("Persons %d, columns %d\n", persons, columns);
+                exit(2);
+                }
+            }
+        else
+            {
+            printf("Different number of columns %d and %d\n", mincols, maxcols);
+            exit(1);
             }
         rewind(fp);
         // 140	94.7639	90.7244	0.357086	590.125	110.799	0.275333
-        line* Lines = (line*)calloc(lines, sizeof(struct line));
+        line* Lines = new line[lines];
+        char* buffer = new char[maxlen + 2];
         int L = 0;
-        int frame;
-        double xl;
-        double yl;
-        double pl;
-        double xr;
-        double yr;
-        double pr;
-        for(L = 0; L < lines -1 && fscanf(fp, "%d\t%lg\t%le\t%lf\t%lf\t%lf\t%lf\r\n", &frame, &xl, &yl, &pl, &xr, &yr, &pr); ++L)
+        for (L = 0; L < lines - 1; ++L)
             {
-            Lines[L].frame = frame;
-            Lines[L].P[0].x = xl;
-            Lines[L].P[0].y = yl;
-            Lines[L].P[0].p = pl;
-            Lines[L].P[1].x = xr;
-            Lines[L].P[1].y = yr;
-            Lines[L].P[1].p = pr;
+            fgets(buffer, maxlen + 1, fp);
+            int len = strlen(buffer);
+            if (len > 0)
+                buffer[len - 1] = '\t'; // overwrite \n
+            char* tab = strchr(buffer, '\t');
+            *tab++ = '\0';
+            Lines[L].frame = strtol(buffer, 0L, 10);
+            for (int i = 0; i < persons; ++i)
+                {
+                char* nexttab = strchr(tab, '\t');
+                *nexttab = '\0';
+                Lines[L].P[i].x = strtod(tab, 0L);
+                tab = nexttab + 1;
+
+                nexttab = strchr(tab, '\t');
+                *nexttab = '\0';
+                Lines[L].P[i].y = strtod(tab, 0L);
+                tab = nexttab + 1;
+
+                nexttab = strchr(tab, '\t');
+                if (nexttab)
+                    *nexttab = '\0';
+                Lines[L].P[i].p = strtod(tab, 0L);
+                if (nexttab)
+                    tab = nexttab + 1;
+                }
             }
         Lines[L].frame = 0;
-        Lines[L].P[0].x = 0.0;
-        Lines[L].P[0].y = 0.0;
-        Lines[L].P[0].p = 0.0;
-        Lines[L].P[1].x = 0.0;
-        Lines[L].P[1].y = 0.0;
-        Lines[L].P[1].p = 0.0;
+        for (int i = 0; i < persons; ++i)
+            {
+            Lines[L].P[i].x = 0.0;
+            Lines[L].P[i].y = 0.0;
+            Lines[L].P[i].p = 0.0;
+            }
         fclose(fp);
         return Lines;
         }
@@ -340,13 +394,13 @@ int clock(double sagittaH, double sagittaV)
     {
     double theta = atan2((double)-sagittaV, (double)sagittaH) * 180.0 / M_PI;
     theta = -theta;
-    if(theta < 0.0)
+    if (theta < 0.0)
         theta += 360;
     theta += 105; // half past eleven
     int direction = (int)theta;
     direction %= 360;
     direction /= 30; // 0 .. 11
-    if(direction == 0)
+    if (direction == 0)
         direction = 12;
     return direction;
     }
@@ -360,44 +414,48 @@ double rho(double sagittaH, double sagittaV)
 void printPerson(FILE* fp, struct person* Person, char* name)
     {
     fprintf(fp,
-            "%lf\t%lf\t%lf\t%lf\t%ld\t%lf\t%lf\t%lf\t%ld\t%lf\t%lf\t%lf\t%ld\t%lf\t%lf",
-            Person->x, Person->y, Person->p,
-            rho(Person->vx, Person->vy), clock(Person->vx, Person->vy), Person->vx, Person->vy,
-            rho(Person->ax, Person->ay), clock(Person->ax, Person->ay), Person->ax, Person->ay,
-            rho(Person->jx, Person->jy), clock(Person->jx, Person->jy), Person->jx, Person->jy
+        "%lf\t%lf\t%lf\t%lf\t%ld\t%lf\t%lf\t%lf\t%ld\t%lf\t%lf\t%lf\t%ld\t%lf\t%lf",
+        Person->x, Person->y, Person->p,
+        rho(Person->vx, Person->vy), clock(Person->vx, Person->vy), Person->vx, Person->vy,
+        rho(Person->ax, Person->ay), clock(Person->ax, Person->ay), Person->ax, Person->ay,
+        rho(Person->jx, Person->jy), clock(Person->jx, Person->jy), Person->jx, Person->jy
     );
-            // F2:x-pos	F2:y-pos	F2:weight	F2:velocity-r	F2:velocity-clock	F2:velocity-x	F2:velocity-y	F2:acceleration-r	F2:acceleration-clock	F2:acceleration-x	F2:acceleration-y	F2:jerk-r	F2:jerk-clock	F2:jerk-x	F2:jerk-y
+    // F2:x-pos	F2:y-pos	F2:weight	F2:velocity-r	F2:velocity-clock	F2:velocity-x	F2:velocity-y	F2:acceleration-r	F2:acceleration-clock	F2:acceleration-x	F2:acceleration-y	F2:jerk-r	F2:jerk-clock	F2:jerk-x	F2:jerk-y
     }
 
 void printPersonHead(FILE* fp, char* name)
     {
     fprintf(fp
-            , "%s:x-pos\t%s:y-pos\t%s:weight\t%s:velocity-r\t%s:velocity-clock\t%s:velocity-x\t%s:velocity-y\t%s:acceleration-r\t%s:acceleration-clock\t%s:acceleration-x\t%s:acceleration-y\t%s:jerk-r\t%s:jerk-clock\t%s:jerk-x\t%s:jerk-y"
-            , name, name, name, name, name, name, name, name, name, name, name, name, name, name, name
+        , "%s:x-pos\t%s:y-pos\t%s:weight\t%s:velocity-r\t%s:velocity-clock\t%s:velocity-x\t%s:velocity-y\t%s:acceleration-r\t%s:acceleration-clock\t%s:acceleration-x\t%s:acceleration-y\t%s:jerk-r\t%s:jerk-clock\t%s:jerk-x\t%s:jerk-y"
+        , name, name, name, name, name, name, name, name, name, name, name, name, name, name, name
     );
     }
 
 //static char names[2][3];
-static char * names[2];
+static char** names;
 
 void print(struct line* Lines, const char* out)
     {
     FILE* fp = fopen(out, "wb");
-    if(fp)
+    if (fp)
         {
         fprintf(fp, "frame\t");
-        printPersonHead(fp, names[0]);
-        fputc('\t', fp);
-        printPersonHead(fp, names[1]);
-        fputc('\n', fp);
+        for (int p = 0; p < persons; ++p)
+            {
+            printPersonHead(fp, names[p]);
+            if (p + 1 < persons)
+                fputc('\t', fp);
+            else
+                fputc('\n', fp);
+            }
         struct line* current = Lines;
-        for(current = Lines; current->frame; ++current)
+        for (current = Lines; current->frame; ++current)
             {
             fprintf(fp, "%d\t", (current->frame) << 2);
-            for(int p = 0; p < 2; ++p)
+            for (int p = 0; p < persons; ++p)
                 {
                 printPerson(fp, current->P + p, names[p]);
-                if(p == 0)
+                if (p + 1 < persons)
                     fputc('\t', fp);
                 else
                     fputc('\n', fp);
@@ -409,10 +467,10 @@ void print(struct line* Lines, const char* out)
 
 int main(int argc, char** argv)
     {
-    if(argc != 9)
+    if (argc < 8)
         {
-        //       0      1       2          3             4               5                   6                 7             8
-        printf("jerk <input> <output> <leftperson> <rightperson> <velocity period> <acceleration period> <jerk period> <margin type>\n");
+        //       0      1       2          3                    4                  5              6          7       8     9..
+        printf("jerk <input> <output> <velocity period> <acceleration period> <jerk period> <margin type> <point> [<point> ...] \n");
         return -1;
         }
     /*
@@ -423,20 +481,22 @@ int main(int argc, char** argv)
     names[1][1] = argv[1][4];
     names[1][2] = 0;
     */
-    names[0] = argv[3];
-    names[1] = argv[4];
+    persons = argc - 7;
+    names = new char* [persons];
+    for (int i = 0; i < persons; i++)
+        names[i] = argv[7 + i];
     struct line* Lines = readInput(argv[1]);
-    if(Lines)
+    if (Lines)
         {
-        unsigned long velow = strtoul(argv[5], NULL, 10);
-        unsigned long accew = strtoul(argv[6], NULL, 10);
-        unsigned long jerkw = strtoul(argv[7], NULL, 10);
+        unsigned long velow = strtoul(argv[3], NULL, 10);
+        unsigned long accew = strtoul(argv[4], NULL, 10);
+        unsigned long jerkw = strtoul(argv[5], NULL, 10);
         int pers = 0;
-        for(pers = 0; pers < 2; ++pers)
+        for (pers = 0; pers < persons; ++pers)
             {
-            doPerson(pers, evelo, argv[5], argv[8], Lines);
-            doPerson(pers, eacce, argv[6], argv[8], Lines);
-            doPerson(pers, ejerk, argv[7], argv[8], Lines);
+            doPerson(pers, evelo, argv[3], argv[6], Lines);
+            doPerson(pers, eacce, argv[4], argv[6], Lines);
+            doPerson(pers, ejerk, argv[5], argv[6], Lines);
             }
         print(Lines, argv[2]);
         free(Lines);

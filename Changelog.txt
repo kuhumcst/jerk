@@ -1,3 +1,8 @@
 2020.01.28
 
 Fixed bug in capture of y and p values for the second person.
+
+2021.06.14
+
+Updated comments and variable names to reflect that the input is not restricted
+to two persons' nose tip data, but can contain any number of body part data.

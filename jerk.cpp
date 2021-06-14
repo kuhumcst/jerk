@@ -1,15 +1,16 @@
 /* JERK
-Analyses the movement of two points in x-y plane, in casu nose tips data from
-OpenPoseDemo.exe, and computes velocity, acceleration and jerk of the points.
+Analyses the movement of two points in x-y plane, in casu nose tips' and other
+body points' data from OpenPoseDemo.exe, and computes velocity, acceleration
+and jerk of the points.
 
-The program expects input with data for two persons in a dialogue situation.
+The program expects input with data for persons in a dialogue situation.
 
 The format of the input is as follows:
 
-FrameNr <tab> <person A data> <tab> <person B data> <newline>
+FrameNr <tab> <first body part data> [<tab> <second body part data> ...] <newline>
   ...
 
-where data for each person is
+where data for each body part is
 
 <x-position> <tab> <y-position> <tab> <probability>
 
@@ -18,24 +19,26 @@ The probability value is currently ignored.
 The command line arguments to the program are
   input file
   output file
-  "name" of the first person
-  "name" of the second person
   number of observations used for computing velocity
   number of observations used for computing acceleration
   number of observations used for computing jerk
   location of the observations with respect to the created annotation:
        'past' or 'middle'
+  "name" of the first body point
+ ["name" of the second body point
+  "name" of the third body point
+  ...]
 
 For example
 
-  jerk F2_M4_SPLIT_FINAL.tab F2_M4_SPLIT_FINAL-7-14-21-past.vaj.tab F2 M4 7 14 21 past
+  jerk F2_M4_SPLIT_FINAL.tab F2_M4_SPLIT_FINAL-7-14-21-past.vaj.tab 7 14 21 past F2:Nose M4:Nose F2:Neck M4:Neck F2:MidHip M4:MidHip
 
 
 Output format is
-<frame number x 4> <tab> <person A data> <tab> <person B data> <new line>
+<frame number x 4> <tab> <bodyPoint A data> [<tab> <bodyPoint B data> ...] <new line>
   ...
 
-<person data> =
+<bodyPoint data> =
 <x> <tab> <y> <tab> <probability> <tab> <velocity> <tab> <acceleration> <tab> <jerk> <new line>
 
 where
@@ -46,7 +49,7 @@ where
 1..12 are 'clock' directions. '12' is up, '3' to the right, etc.
 
 Author: Bart Jongejan
-2020.01.23
+2020.01.23, 2021.06.14
 */
 
 /*  */
@@ -64,7 +67,7 @@ enum
     evelo, eacce, ejerk
     };
 
-struct person
+struct bodyPoint
     {
     double x;
     double y;
@@ -77,15 +80,15 @@ struct person
     double jy;
     };
 
-int persons;
+int bodyPoints;
 
 struct line
     {
     int frame;
-    struct person* P;
+    struct bodyPoint* P;
     line() :frame(-1), P(0)
         {
-        P = new person[persons];
+        P = new bodyPoint[bodyPoints];
         }
     };
 
@@ -161,7 +164,7 @@ double jerk(double St2, double St2h, double St3, double St3h, double St4, double
     }
 
 
-void doPerson(int Person, int what, const char* Period, const char* margin, line* Lines)
+void doBodyPoint(int BodyPointNr, int what, const char* Period, const char* margin, line* Lines)
     {
     size_t seqsiz = strtoul(Period, 0, 10);
     double period = (double)seqsiz;
@@ -180,29 +183,29 @@ void doPerson(int Person, int what, const char* Period, const char* margin, line
         Offset = 0;
     for (current = Lines; current->frame != 0; ++current)
         {
-        struct person* pers = current->P + Person;
+        struct bodyPoint* point = current->P + BodyPointNr;
         struct line* assignTo = current - Offset;
-        struct person* assignToPers = assignTo->P + Person;
+        struct bodyPoint* assignToPoint = assignTo->P + BodyPointNr;
         if (assignTo < Lines)
             assignTo = 0;
         else
             switch (what)
                 {
                 case evelo:
-                    assignToPers->vx = 0;
-                    assignToPers->vy = 0;
+                    assignToPoint->vx = 0;
+                    assignToPoint->vy = 0;
                     break;
                 case eacce:
-                    assignToPers->ax = 0;
-                    assignToPers->ay = 0;
+                    assignToPoint->ax = 0;
+                    assignToPoint->ay = 0;
                     break;
                 case ejerk:
-                    assignToPers->jx = 0;
-                    assignToPers->jy = 0;
+                    assignToPoint->jx = 0;
+                    assignToPoint->jy = 0;
                     break;
                 }
 
-        if (pers->x != 0)
+        if (point->x != 0)
             {
             int ind = index % seqsiz;
 
@@ -216,8 +219,8 @@ void doPerson(int Person, int what, const char* Period, const char* margin, line
                 {
                 Ts[ind] = current->frame - t0;
                 }
-            hs[ind] = pers->x;
-            vs[ind] = pers->y;
+            hs[ind] = point->x;
+            vs[ind] = point->y;
             ++index;
             if (index >= seqsiz)
                 {
@@ -272,16 +275,16 @@ void doPerson(int Person, int what, const char* Period, const char* margin, line
                 switch (what)
                     {
                     case evelo:
-                        assignToPers->vx = velocity(St, St2, Sh, Sth, period);
-                        assignToPers->vy = velocity(St, St2, Sv, Stv, period);
+                        assignToPoint->vx = velocity(St, St2, Sh, Sth, period);
+                        assignToPoint->vy = velocity(St, St2, Sv, Stv, period);
                         break;
                     case eacce:
-                        assignToPers->ax = acceleration(St, St2, St3, St4, Sh, Sth, St2h, period);
-                        assignToPers->ay = acceleration(St, St2, St3, St4, Sv, Stv, St2v, period);
+                        assignToPoint->ax = acceleration(St, St2, St3, St4, Sh, Sth, St2h, period);
+                        assignToPoint->ay = acceleration(St, St2, St3, St4, Sv, Stv, St2v, period);
                         break;
                     case ejerk:
-                        assignToPers->jx = jerk(St2, St2h, St3, St3h, St4, St5, St6, Sth, period);
-                        assignToPers->jy = jerk(St2, St2v, St3, St3v, St4, St5, St6, Stv, period);
+                        assignToPoint->jx = jerk(St2, St2h, St3, St3h, St4, St5, St6, Sth, period);
+                        assignToPoint->jy = jerk(St2, St2v, St3, St3v, St4, St5, St6, Stv, period);
                         break;
                     }
                 }
@@ -331,9 +334,9 @@ line* readInput(char* name)
         if (mincols == maxcols)
             {
             columns = maxcols;
-            if (columns != 3 * persons)
+            if (columns != 3 * bodyPoints)
                 {
-                printf("Persons %d, columns %d\n", persons, columns);
+                printf("Body points %d, columns %d\n", bodyPoints, columns);
                 exit(2);
                 }
             }
@@ -356,7 +359,7 @@ line* readInput(char* name)
             char* tab = strchr(buffer, '\t');
             *tab++ = '\0';
             Lines[L].frame = strtol(buffer, 0L, 10);
-            for (int i = 0; i < persons; ++i)
+            for (int i = 0; i < bodyPoints; ++i)
                 {
                 char* nexttab = strchr(tab, '\t');
                 *nexttab = '\0';
@@ -377,7 +380,7 @@ line* readInput(char* name)
                 }
             }
         Lines[L].frame = 0;
-        for (int i = 0; i < persons; ++i)
+        for (int i = 0; i < bodyPoints; ++i)
             {
             Lines[L].P[i].x = 0.0;
             Lines[L].P[i].y = 0.0;
@@ -411,19 +414,19 @@ double rho(double sagittaH, double sagittaV)
     return rho;
     }
 
-void printPerson(FILE* fp, struct person* Person, char* name)
+void printBodyPoint(FILE* fp, struct bodyPoint* BodyPoint, char* name)
     {
     fprintf(fp,
         "%lf\t%lf\t%lf\t%lf\t%ld\t%lf\t%lf\t%lf\t%ld\t%lf\t%lf\t%lf\t%ld\t%lf\t%lf",
-        Person->x, Person->y, Person->p,
-        rho(Person->vx, Person->vy), clock(Person->vx, Person->vy), Person->vx, Person->vy,
-        rho(Person->ax, Person->ay), clock(Person->ax, Person->ay), Person->ax, Person->ay,
-        rho(Person->jx, Person->jy), clock(Person->jx, Person->jy), Person->jx, Person->jy
+        BodyPoint->x, BodyPoint->y, BodyPoint->p,
+        rho(BodyPoint->vx, BodyPoint->vy), clock(BodyPoint->vx, BodyPoint->vy), BodyPoint->vx, BodyPoint->vy,
+        rho(BodyPoint->ax, BodyPoint->ay), clock(BodyPoint->ax, BodyPoint->ay), BodyPoint->ax, BodyPoint->ay,
+        rho(BodyPoint->jx, BodyPoint->jy), clock(BodyPoint->jx, BodyPoint->jy), BodyPoint->jx, BodyPoint->jy
     );
     // F2:x-pos	F2:y-pos	F2:weight	F2:velocity-r	F2:velocity-clock	F2:velocity-x	F2:velocity-y	F2:acceleration-r	F2:acceleration-clock	F2:acceleration-x	F2:acceleration-y	F2:jerk-r	F2:jerk-clock	F2:jerk-x	F2:jerk-y
     }
 
-void printPersonHead(FILE* fp, char* name)
+void printPointHead(FILE* fp, char* name)
     {
     fprintf(fp
         , "%s:x-pos\t%s:y-pos\t%s:weight\t%s:velocity-r\t%s:velocity-clock\t%s:velocity-x\t%s:velocity-y\t%s:acceleration-r\t%s:acceleration-clock\t%s:acceleration-x\t%s:acceleration-y\t%s:jerk-r\t%s:jerk-clock\t%s:jerk-x\t%s:jerk-y"
@@ -440,10 +443,10 @@ void print(struct line* Lines, const char* out)
     if (fp)
         {
         fprintf(fp, "frame\t");
-        for (int p = 0; p < persons; ++p)
+        for (int p = 0; p < bodyPoints; ++p)
             {
-            printPersonHead(fp, names[p]);
-            if (p + 1 < persons)
+            printPointHead(fp, names[p]);
+            if (p + 1 < bodyPoints)
                 fputc('\t', fp);
             else
                 fputc('\n', fp);
@@ -452,10 +455,10 @@ void print(struct line* Lines, const char* out)
         for (current = Lines; current->frame; ++current)
             {
             fprintf(fp, "%d\t", (current->frame) << 2);
-            for (int p = 0; p < persons; ++p)
+            for (int p = 0; p < bodyPoints; ++p)
                 {
-                printPerson(fp, current->P + p, names[p]);
-                if (p + 1 < persons)
+                printBodyPoint(fp, current->P + p, names[p]);
+                if (p + 1 < bodyPoints)
                     fputc('\t', fp);
                 else
                     fputc('\n', fp);
@@ -481,9 +484,9 @@ int main(int argc, char** argv)
     names[1][1] = argv[1][4];
     names[1][2] = 0;
     */
-    persons = argc - 7;
-    names = new char* [persons];
-    for (int i = 0; i < persons; i++)
+    bodyPoints = argc - 7;
+    names = new char* [bodyPoints];
+    for (int i = 0; i < bodyPoints; i++)
         names[i] = argv[7 + i];
     struct line* Lines = readInput(argv[1]);
     if (Lines)
@@ -491,12 +494,12 @@ int main(int argc, char** argv)
         unsigned long velow = strtoul(argv[3], NULL, 10);
         unsigned long accew = strtoul(argv[4], NULL, 10);
         unsigned long jerkw = strtoul(argv[5], NULL, 10);
-        int pers = 0;
-        for (pers = 0; pers < persons; ++pers)
+        int pnt = 0;
+        for (pnt = 0; pnt < bodyPoints; ++pnt)
             {
-            doPerson(pers, evelo, argv[3], argv[6], Lines);
-            doPerson(pers, eacce, argv[4], argv[6], Lines);
-            doPerson(pers, ejerk, argv[5], argv[6], Lines);
+            doBodyPoint(pnt, evelo, argv[3], argv[6], Lines);
+            doBodyPoint(pnt, eacce, argv[4], argv[6], Lines);
+            doBodyPoint(pnt, ejerk, argv[5], argv[6], Lines);
             }
         print(Lines, argv[2]);
         free(Lines);

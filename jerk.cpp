@@ -33,6 +33,11 @@ For example
 
   jerk F2_M4_SPLIT_FINAL.tab F2_M4_SPLIT_FINAL-7-14-21-past.vaj.tab 7 14 21 past F2:Nose M4:Nose F2:Neck M4:Neck F2:MidHip M4:MidHip
 
+Input is a tab separated text file. The number of columns is not completely fixed.
+The first column is the frame number.
+The second, third and fourth column are the x, y and reliability data of the first bodypoint to analyse. 
+If there are data for more than one body points in the same frame, add three columns for each body point,
+so number of columns = 1 + 3 * number of body points.
 
 Output format is
 <frame number x 4> <tab> <bodyPoint A data> [<tab> <bodyPoint B data> ...] <new line>

@@ -35,7 +35,7 @@ For example
 
 Input is a tab separated text file. The number of columns is not completely fixed.
 The first column is the frame number.
-The second, third and fourth column are the x, y and reliability data of the first bodypoint to analyse. 
+The second, third and fourth column are the x, y and reliability data of the first bodypoint to analyse.
 If there are data for more than one body points in the same frame, add three columns for each body point,
 so number of columns = 1 + 3 * number of body points.
 
@@ -146,14 +146,14 @@ double acceleration(double St, double St2, double St3, double St4, double Sh, do
     */
     return
         (Sh * (St * St3 - St2 * St2)
-            + Sth * (St * St2 - St3 * period)
-            + St2h * (St2 * period - St * St)
-            )
+         + Sth * (St * St2 - St3 * period)
+         + St2h * (St2 * period - St * St)
+         )
         /
         (St2 * (2 * St * St3 - St2 * St2 + St4 * period)
-            - St * St * St4
-            - St3 * St3 * period
-            );
+         - St * St * St4
+         - St3 * St3 * period
+         );
 
     }
 
@@ -182,19 +182,19 @@ void doBodyPoint(int BodyPointNr, int what, const char* Period, const char* marg
     struct line* current = Lines;
 
     long Offset;
-    if (!strcmp(margin, "middle"))
+    if(!strcmp(margin, "middle"))
         Offset = (seqsiz - 1) >> 1;
     else
         Offset = 0;
-    for (current = Lines; current->frame != 0; ++current)
+    for(current = Lines; current->frame >= 0; ++current)
         {
         struct bodyPoint* point = current->P + BodyPointNr;
         struct line* assignTo = current - Offset;
         struct bodyPoint* assignToPoint = assignTo->P + BodyPointNr;
-        if (assignTo < Lines)
+        if(assignTo < Lines)
             assignTo = 0;
         else
-            switch (what)
+            switch(what)
                 {
                 case evelo:
                     assignToPoint->vx = 0;
@@ -210,11 +210,11 @@ void doBodyPoint(int BodyPointNr, int what, const char* Period, const char* marg
                     break;
                 }
 
-        if (point->x != 0)
+        if(point->x != 0)
             {
             int ind = index % seqsiz;
 
-            if (index == 0)
+            if(index == 0)
                 // Start accumulation of datapoints
                 {
                 t0 = current->frame;
@@ -227,7 +227,7 @@ void doBodyPoint(int BodyPointNr, int what, const char* Period, const char* marg
             hs[ind] = point->x;
             vs[ind] = point->y;
             ++index;
-            if (index >= seqsiz)
+            if(index >= seqsiz)
                 {
                 size_t i;
                 double averageTime = 0;
@@ -238,12 +238,12 @@ void doBodyPoint(int BodyPointNr, int what, const char* Period, const char* marg
                 double averageh = 0;
                 double averagev = 0;
                 long Tbias = 0;
-                for (i = 0; i < seqsiz; ++i)
+                for(i = 0; i < seqsiz; ++i)
                     {
                     Tbias += Ts[i];
                     }
                 Tbias /= seqsiz;
-                for (i = index - seqsiz; i < index; ++i)
+                for(i = index - seqsiz; i < index; ++i)
                     {
                     int id = i % seqsiz;
                     averageh += hs[id];
@@ -254,7 +254,7 @@ void doBodyPoint(int BodyPointNr, int what, const char* Period, const char* marg
                 averageh = averageh / period;
                 averagev = averagev / period;
                 averageTime = averageTime / period;
-                for (i = index - seqsiz; i < index; ++i)
+                for(i = index - seqsiz; i < index; ++i)
                     {
                     int id = i % seqsiz;
                     double t = ts[id] - averageTime;
@@ -277,7 +277,7 @@ void doBodyPoint(int BodyPointNr, int what, const char* Period, const char* marg
                     St2v += t2 * v;
                     St3v += t3 * v;
                     }
-                switch (what)
+                switch(what)
                     {
                     case evelo:
                         assignToPoint->vx = velocity(St, St2, Sh, Sth, period);
@@ -306,7 +306,7 @@ line* readInput(char* name)
     FILE* fp;
     printf("name %s\n", name);
     fp = fopen(name, "r");
-    if (fp)
+    if(fp)
         {
         int lines = 1;
         int kar;
@@ -316,30 +316,30 @@ line* readInput(char* name)
         int cols = 0;
         int maxlen = 0;
         int len = 0;
-        while ((kar = fgetc(fp)) != EOF)
+        while((kar = fgetc(fp)) != EOF)
             {
             ++len;
-            if (kar == '\n')
+            if(kar == '\n')
                 {
                 ++lines;
-                if (cols > maxcols)
+                if(cols > maxcols)
                     maxcols = cols;
-                if (cols < mincols)
+                if(cols < mincols)
                     mincols = cols;
-                if (len > maxlen)
+                if(len > maxlen)
                     maxlen = len;
                 len = 0;
                 cols = 0;
                 }
-            else if (kar == '\t')
+            else if(kar == '\t')
                 {
                 ++cols;
                 }
             }
-        if (mincols == maxcols)
+        if(mincols == maxcols)
             {
             columns = maxcols;
-            if (columns != 3 * bodyPoints)
+            if(columns != 3 * bodyPoints)
                 {
                 printf("Body points %d, columns %d\n", bodyPoints, columns);
                 exit(2);
@@ -355,16 +355,16 @@ line* readInput(char* name)
         line* Lines = new line[lines];
         char* buffer = new char[maxlen + 2];
         int L = 0;
-        for (L = 0; L < lines - 1; ++L)
+        for(L = 0; L < lines - 1; ++L)
             {
             fgets(buffer, maxlen + 1, fp);
-            int len = strlen(buffer);
-            if (len > 0)
-                buffer[len - 1] = '\t'; // overwrite \n
+            int lngth = strlen(buffer);
+            if(lngth > 0)
+                buffer[lngth - 1] = '\t'; // overwrite \n
             char* tab = strchr(buffer, '\t');
             *tab++ = '\0';
             Lines[L].frame = strtol(buffer, 0L, 10);
-            for (int i = 0; i < bodyPoints; ++i)
+            for(int i = 0; i < bodyPoints; ++i)
                 {
                 char* nexttab = strchr(tab, '\t');
                 *nexttab = '\0';
@@ -377,19 +377,32 @@ line* readInput(char* name)
                 tab = nexttab + 1;
 
                 nexttab = strchr(tab, '\t');
-                if (nexttab)
+                if(nexttab)
                     *nexttab = '\0';
                 Lines[L].P[i].p = strtod(tab, 0L);
-                if (nexttab)
+                if(nexttab)
                     tab = nexttab + 1;
+
+                Lines[L].P[i].vx = 0;
+                Lines[L].P[i].ax = 0;
+                Lines[L].P[i].jx = 0;
+                Lines[L].P[i].vy = 0;
+                Lines[L].P[i].ay = 0;
+                Lines[L].P[i].jy = 0;
                 }
             }
-        Lines[L].frame = 0;
-        for (int i = 0; i < bodyPoints; ++i)
+        Lines[L].frame = -1;
+        for(int i = 0; i < bodyPoints; ++i)
             {
             Lines[L].P[i].x = 0.0;
             Lines[L].P[i].y = 0.0;
             Lines[L].P[i].p = 0.0;
+            Lines[L].P[i].vx = 0;
+            Lines[L].P[i].ax = 0;
+            Lines[L].P[i].jx = 0;
+            Lines[L].P[i].vy = 0;
+            Lines[L].P[i].ay = 0;
+            Lines[L].P[i].jy = 0;
             }
         fclose(fp);
         return Lines;
@@ -402,13 +415,13 @@ int clock(double sagittaH, double sagittaV)
     {
     double theta = atan2((double)-sagittaV, (double)sagittaH) * 180.0 / M_PI;
     theta = -theta;
-    if (theta < 0.0)
+    if(theta < 0.0)
         theta += 360;
     theta += 105; // half past eleven
     int direction = (int)theta;
     direction %= 360;
     direction /= 30; // 0 .. 11
-    if (direction == 0)
+    if(direction == 0)
         direction = 12;
     return direction;
     }
@@ -419,14 +432,14 @@ double rho(double sagittaH, double sagittaV)
     return rho;
     }
 
-void printBodyPoint(FILE* fp, struct bodyPoint* BodyPoint, char* name)
+void printBodyPoint(FILE* fp, struct bodyPoint* BodyPoint/*, char* name*/)
     {
     fprintf(fp,
-        "%lf\t%lf\t%lf\t%lf\t%ld\t%lf\t%lf\t%lf\t%ld\t%lf\t%lf\t%lf\t%ld\t%lf\t%lf",
-        BodyPoint->x, BodyPoint->y, BodyPoint->p,
-        rho(BodyPoint->vx, BodyPoint->vy), clock(BodyPoint->vx, BodyPoint->vy), BodyPoint->vx, BodyPoint->vy,
-        rho(BodyPoint->ax, BodyPoint->ay), clock(BodyPoint->ax, BodyPoint->ay), BodyPoint->ax, BodyPoint->ay,
-        rho(BodyPoint->jx, BodyPoint->jy), clock(BodyPoint->jx, BodyPoint->jy), BodyPoint->jx, BodyPoint->jy
+            "%lf\t%lf\t%lf\t%lf\t%d\t%lf\t%lf\t%lf\t%d\t%lf\t%lf\t%lf\t%d\t%lf\t%lf",
+            BodyPoint->x, BodyPoint->y, BodyPoint->p,
+            rho(BodyPoint->vx, BodyPoint->vy), clock(BodyPoint->vx, BodyPoint->vy), BodyPoint->vx, BodyPoint->vy,
+            rho(BodyPoint->ax, BodyPoint->ay), clock(BodyPoint->ax, BodyPoint->ay), BodyPoint->ax, BodyPoint->ay,
+            rho(BodyPoint->jx, BodyPoint->jy), clock(BodyPoint->jx, BodyPoint->jy), BodyPoint->jx, BodyPoint->jy
     );
     // F2:x-pos	F2:y-pos	F2:weight	F2:velocity-r	F2:velocity-clock	F2:velocity-x	F2:velocity-y	F2:acceleration-r	F2:acceleration-clock	F2:acceleration-x	F2:acceleration-y	F2:jerk-r	F2:jerk-clock	F2:jerk-x	F2:jerk-y
     }
@@ -434,8 +447,8 @@ void printBodyPoint(FILE* fp, struct bodyPoint* BodyPoint, char* name)
 void printPointHead(FILE* fp, char* name)
     {
     fprintf(fp
-        , "%s:x-pos\t%s:y-pos\t%s:weight\t%s:velocity-r\t%s:velocity-clock\t%s:velocity-x\t%s:velocity-y\t%s:acceleration-r\t%s:acceleration-clock\t%s:acceleration-x\t%s:acceleration-y\t%s:jerk-r\t%s:jerk-clock\t%s:jerk-x\t%s:jerk-y"
-        , name, name, name, name, name, name, name, name, name, name, name, name, name, name, name
+            , "%s:x-pos\t%s:y-pos\t%s:weight\t%s:velocity-r\t%s:velocity-clock\t%s:velocity-x\t%s:velocity-y\t%s:acceleration-r\t%s:acceleration-clock\t%s:acceleration-x\t%s:acceleration-y\t%s:jerk-r\t%s:jerk-clock\t%s:jerk-x\t%s:jerk-y"
+            , name, name, name, name, name, name, name, name, name, name, name, name, name, name, name
     );
     }
 
@@ -445,25 +458,25 @@ static char** names;
 void print(struct line* Lines, const char* out)
     {
     FILE* fp = fopen(out, "wb");
-    if (fp)
+    if(fp)
         {
         fprintf(fp, "frame\t");
-        for (int p = 0; p < bodyPoints; ++p)
+        for(int p = 0; p < bodyPoints; ++p)
             {
             printPointHead(fp, names[p]);
-            if (p + 1 < bodyPoints)
+            if(p + 1 < bodyPoints)
                 fputc('\t', fp);
             else
                 fputc('\n', fp);
             }
         struct line* current = Lines;
-        for (current = Lines; current->frame; ++current)
+        for(current = Lines; current->frame >= 0; ++current)
             {
             fprintf(fp, "%d\t", (current->frame) << 2);
-            for (int p = 0; p < bodyPoints; ++p)
+            for(int p = 0; p < bodyPoints; ++p)
                 {
-                printBodyPoint(fp, current->P + p, names[p]);
-                if (p + 1 < bodyPoints)
+                printBodyPoint(fp, current->P + p/*, names[p]*/);
+                if(p + 1 < bodyPoints)
                     fputc('\t', fp);
                 else
                     fputc('\n', fp);
@@ -475,7 +488,7 @@ void print(struct line* Lines, const char* out)
 
 int main(int argc, char** argv)
     {
-    if (argc < 8)
+    if(argc < 8)
         {
         //       0      1       2          3                    4                  5              6          7       8     9..
         printf("jerk <input> <output> <velocity period> <acceleration period> <jerk period> <margin type> <point> [<point> ...] \n");
@@ -491,16 +504,18 @@ int main(int argc, char** argv)
     */
     bodyPoints = argc - 7;
     names = new char* [bodyPoints];
-    for (int i = 0; i < bodyPoints; i++)
+    for(int i = 0; i < bodyPoints; i++)
         names[i] = argv[7 + i];
     struct line* Lines = readInput(argv[1]);
-    if (Lines)
+    if(Lines)
         {
+        /*
         unsigned long velow = strtoul(argv[3], NULL, 10);
         unsigned long accew = strtoul(argv[4], NULL, 10);
         unsigned long jerkw = strtoul(argv[5], NULL, 10);
+        */
         int pnt = 0;
-        for (pnt = 0; pnt < bodyPoints; ++pnt)
+        for(pnt = 0; pnt < bodyPoints; ++pnt)
             {
             doBodyPoint(pnt, evelo, argv[3], argv[6], Lines);
             doBodyPoint(pnt, eacce, argv[4], argv[6], Lines);
